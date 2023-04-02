@@ -1,0 +1,64 @@
+// SPDX - Lincense- Identifier : GPL-3.0
+
+pragma solidity >=0.5.0 < 0.9.0;
+
+contract Lottery 
+{
+    address public manager;
+    address payable[] public participants;
+
+    constructor()
+    {
+        manager=msg.sender; 
+        // Global variable 
+        // Manager will be that one from where we deploy the address
+    }
+
+    receive() external payable 
+    // receive is a special function that we can use only one time and it is always a external type
+    {
+        require(msg.value <= 1 ether);
+        // require is like if else
+        participants.push(payable(msg.sender));
+    }
+
+    function getBalance() public view returns(uint)
+    {
+        require (msg.sender == manager);
+        return address (this).balance;
+    }
+
+    function random() public view returns(uint)
+    {
+        return uint(keccak256(abi.encodePacked(block.prevrandao,block.timestamp,participants.length)));
+        //this function is to gentrate a random number and we have to see this type of function on net no need to remenber 
+    }
+
+    function selectWinner() public view returns(address)
+    {
+        require(msg.sender==manager);
+        require(participants.length >= 3);
+        uint r = random();
+        address payable winner;
+        uint index = r % participants.length;
+        // this is logic that if a random number is divided by length of array than the remainder is less 
+        //than the size of array and also start from 0 so that winner will we selected on the basis of number of index of array
+        // and than using index we returns the address of that winner 
+        winner=participants[index];
+        return winner;
+    }
+
+    function prize() public
+    {
+        require(msg.sender==manager);
+        require(participants.length >= 3);
+        uint r = random();
+        address payable winner;
+        uint index = r % participants.length;
+        winner=participants[index];
+        winner.transfer(getBalance());
+        
+      participants= new address payable[](0);
+      // this line is to reset the array after selecting one winner so we can restart the lottery
+    }
+}
